@@ -1,3 +1,4 @@
+import os
 import operator
 import math
 import json
@@ -128,6 +129,18 @@ def calculate_tfidf_queries(queries, idf_score):
 
     return q_tf_idf_scores
 
+def save_dict(dict_data, name):
+
+    with codecs.open(name + ".json", 'w', encoding='utf-8') as f:
+        json.dump(dict_data, f, ensure_ascii=False)
+
+def read_dict(name):
+
+    with codecs.open(name, 'r', encoding='utf-8') as f1:
+        result_dict = json.load(f1, encoding='utf-8')
+
+    return result_dict
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -142,10 +155,30 @@ if __name__ == '__main__':
     # print(pre_processed_data[0])
     # print(queries[0])
 
-    inverted_index = generate_inverted_index(pre_processed_data)
+    # inverted_index = generate_inverted_index(pre_processed_data)
+    # idf_scores = calculate_idf(pre_processed_data)
+    # scores = calculate_tfidf(pre_processed_data, idf_scores)
 
-    idf_scores = calculate_idf(pre_processed_data)
-    scores = calculate_tfidf(pre_processed_data, idf_scores)
+    if os.path.exists("inverted_index.json"):
+        print("load inverted index")
+        inverted_index = read_dict("inverted_index.json")
+    else:
+        inverted_index = generate_inverted_index(pre_processed_data)
+        save_dict(inverted_index, "inverted_index")
+
+    if os.path.exists("idf_scores.json"):
+        print("load idf scores")
+        idf_scores = read_dict("idf_scores.json")
+    else:
+        idf_scores = calculate_idf(pre_processed_data)
+        save_dict(idf_scores, "idf_scores")
+
+    if os.path.exists("scores.json"):
+        print("load tf-idf scores")
+        scores = read_dict("scores.json")
+    else:
+        scores = calculate_tfidf(pre_processed_data, idf_scores)
+        save_dict(scores, "scores")
 
     query_scores = calculate_tfidf_queries(queries, idf_scores)
 
@@ -158,6 +191,7 @@ if __name__ == '__main__':
             if term in inverted_index.keys():
                 docs = inverted_index[term]
                 for doc in docs:
+                    doc = str(doc)
                     doc_score = scores[doc][term]
                     doc_length = math.sqrt(sum(x ** 2 for x in scores[doc].values()))
                     query_score = query_scores[key][term]
